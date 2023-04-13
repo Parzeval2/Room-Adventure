@@ -197,6 +197,8 @@ class Game(Frame):
         words = action.split()
 
         if len(words) != 2:
+            global voiceline
+            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLlost)
             self.set_status(Game.STATUS_DEFAULT)
             return
 
