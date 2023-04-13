@@ -11,7 +11,7 @@ class Room:
         self.filepath = filepath
         self.exits = {}
         self.items = {}
-        self.grabs = {}
+        self.grabs = []
         self.talkables = {}
 
     def add_exit(self, label: str, room: 'Room'):
@@ -96,32 +96,121 @@ class Game(Frame):
 
         r4.add_item("croissant", "moldy")
         #add grabs
-
+        r1.add_grabs("key")
+        r2.add_grabs("fire")
+        r3.add_grabs("doug")
+        r4.add_grabs("butter")
         #set the current room to the starting room
 
+        self.current_room = r1
     def setup_gui(self):
-        pass
+        self.player_input = Entry(self, bg="white", fg="black")
+        self.player_input.bind("<Return>", self.process)
+        self.player_input.pack(side=BOTTOM, fill=X)
+        self.player_input.focus()
 
+
+        # the image container and default image
+        img = None #represetns the actual image
+        self.image_container = Label(self, width=Game.WIDTH//2, height=Game.HEIGHT//2)
+        self.image_container.image = img
+        self.pack(side=LEFT,fill=Y)
+        self.image_container.pack_propagate(False)
+
+        #container for the game text
+        text_container = Frame(self, width=Game.WIDTH//2)
+        self.text = Text(text_container, bg="lightgrey",fg="black")
+        self.text.pack(fill=Y,expand=1)
+        text_container.pack(side=RIGHT,fill=Y)
     def set_room_image(self):
-        pass
+        if self.current_room == None:
+            img = PhotoImage(file="skull.gif")
+        else:
+            img = PhotoImage(file="")
 
-    def set_status(self):
-        pass
+        self.image_container.config(image=img)
+        self.image_container.image = img
+
+    def set_status(self, status):
+        self.text.config(state=NORMAL)
+        self.text.delete(1.0, END)
+
+        if self.current_room == None:
+            self.text.insert(END, self.STATUS_DEAD)
+        else:
+            content = f"{self.current_room}\n You are carrying: {self.inventory}\n\n{status}"
+            self.text.insert(END, content)
+
+        self.text.config(state=DISABLED)
 
     def clear_entry(self):
-        pass
+        self.player_input.delete(0, END)
 
-    def handle_go(self):
-        pass
+    def handle_go(self, destination):
+        status = Game.STATUS_BAD_EXIT
+        if destination in self.current_room.exits:
+            self.current_room = self.current_room.exits[destination]
+            status = Game.STATUS_ROOM_CHANGE
 
-    def handle_look(self):
-        pass
+        self.set_status(status)
 
-    def handle_take(self):
-        pass
+    def handle_look(self, item):
+        status = Game.STATUS_BAD_ITEM
+
+        if item in self.current_room.items:
+            status = self.current_room.items[item]
+
+        self.set_status(status)
+
+    def handle_take(self, grabbable):
+        status = Game.STATUS_BAD_GRABBABLE
+        if grabbable in self.current_room.grabs:
+            self.inventory.append(grabbable)
+            self.current_room.del_grabs(grabbable)
+            status = Game.STATUS_GRABBED
+        self.set_status(status)
 
     def play(self):
-        pass
+        self.setup_game()
+        self.setup_gui()
+        self.set_room_image()
+        self.set_status("")
 
     def process(self):
-        pass
+        action = self.player_input.get()
+        action = action.lower()
+
+        if action in Game.EXIT_ACTIONS:
+            exit()
+
+        if self.current_room == None:
+            self.clear_entry()
+            return
+
+        words = action.split()
+
+        if len(words) != 2:
+            self.set_status(Game.STATUS_DEFAULT)
+            return
+
+        self.clear_entry()
+        verb = words[0]
+        noun = words[1]
+
+        match verb:
+            case "go":
+                self.handle_go(destination=noun)
+            case "look":
+                self.handle_look(item=noun)
+            case "take":
+                self.handle_take(grabbable=noun)
+
+
+
+#main
+
+window = Tk()
+window.title("Room Adventure")
+game = Game(window)
+game.play()
+window.mainloop()
