@@ -176,7 +176,7 @@ class Game(Frame):
         self.set_room_image()
         self.set_status("")
 
-    def process(self):
+    def process(self, event):
         action = self.player_input.get()
         action = action.lower()
 
