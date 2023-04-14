@@ -42,7 +42,7 @@ class Room:
             result += exit + " "
         result += "\n"
 
-        result += voiceline
+        result += "Corriell: " + voiceline
 
         return result
 class Game(Frame):
