@@ -3,6 +3,8 @@
 #Desc: Room adventure reloaded
 
 from tkinter import *
+from random import choice
+import CLines
 
 class Room:
     """ a room that has a name and filepath that points to a .gif image """
@@ -40,10 +42,13 @@ class Room:
             result += exit + " "
         result += "\n"
 
+        result += "Corriell: " + voiceline
+
         return result
 class Game(Frame):
-
-    EXIT_ACTIONS = ["quite,""exit","bye","q"]
+    global voiceline
+    voiceline = ''
+    EXIT_ACTIONS = ["quit,""exit","bye","q"]
 
     #statuses
     STATUS_DEFAULT = "I don't understand. Try [verb] [noun]. Valid verbs are go, look, take"
@@ -150,6 +155,8 @@ class Game(Frame):
         status = Game.STATUS_BAD_EXIT
         if destination in self.current_room.exits:
             self.current_room = self.current_room.exits[destination]
+            global voiceline
+            voiceline = choice(CLines.VLNewRoom)
             status = Game.STATUS_ROOM_CHANGE
 
         self.set_status(status)
@@ -190,6 +197,8 @@ class Game(Frame):
         words = action.split()
 
         if len(words) != 2:
+            global voiceline
+            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLlost)
             self.set_status(Game.STATUS_DEFAULT)
             return
 
@@ -204,6 +213,7 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
+
 
 
 
