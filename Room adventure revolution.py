@@ -1,4 +1,4 @@
-# Name: Grant
+# Name: Gavin, Grant, Matthew, and Max
 # date: 3/29/2023
 # Desc: Room adventure reloaded
 
@@ -78,6 +78,13 @@ class Game(Frame):
     STATUS_LOCKED = "Room Locked"
     STATUS_BAD_KEY = "This key isnt unlocking the door"
 
+    STATUS_LET_GUESS = "You gaze upon the majestic stone bust of Lady Gaga, you notice the mouth seems to be loose. You open it to see a small key pad, perhaps theres a code? Maybe you can guess./n[Hint: guess with <solve> <guess>]"
+    STATUS_BAD_GUESS = "That doesn't seem to be right"
+    STATUS_EGG_GRAB = "The chest portion of the bust opens to reveal a mystical cosmic Egg, you take the egg in your hands.\nBeautiful. Despite it's small, frail size it feels as though you could go straight into the egg"
+    STATUS_BAD_UNKNOWN = "okay... sure...?"
+    STATUS_ENTER_EGG = "You enter the egg"
+    STATUS_NO_SOLVE = "There is nothing to solve here"
+
     WIDTH = 800
     HEIGHT = 600
 
@@ -92,34 +99,44 @@ class Game(Frame):
         r2 = Room("Room 2", "room2.gif")
         r3 = Room("Room 3", "room3.gif")
         r4 = Room("Room 4", "room4.gif")
+        r5 = Room("Room 5", "cosmicEgg.gif")
 
         # add exits
         r1.add_exit("south", r3)
         r1.add_exit("east", r2)
+        r1.add_exit("secretTunnel", r5)
 
         r2.add_exit("west", r1)
         r2.add_exit("south", r4)
+        r2.add_exit("secretTunnel", r5)
 
         r3.add_exit("north", r1)
         r3.add_exit("east", r4)
+        r3.add_exit("secretTunnel", r5)
 
         r4.add_exit("north", r2)
         r4.add_exit("west", r3)
         r4.add_exit("south", None)
+        r4.add_exit("secretTunnel", r5)
+
+        r5.add_exit("none", r5)
 
         # add items
         r1.add_item("chair", "Something about wicker and legs")
         r1.add_item("bigger_chair", "just legs chair")
-        r1.add_item("key", "A silly looking key")
+        r1.add_item("key", "A silly looking kEy")
 
-        r2.add_item("fireplace", "fire")
+        r2.add_item("fireplace", "fiRe")
         r2.add_item("more_chair", "chairy")
 
-        r3.add_item("desk", "They only had wickers at the wood store")
+        r3.add_item("desk", "They only had wickers at the Wood store")
+        r3.add_item("small_statue", "A small stone bust of Lady Gaga.")
         r3.add_item("dimsdale_dimadome", "owned by doug dimadome")
-        r3.add_item("chair", "Somebody really likes to sit")
+        r3.add_item("fancy_chair", "Somebody really likes to sit on zebra fur")
 
-        r4.add_item("croissant", "moldy")
+        r4.add_item("croissant", "moldY")
+
+        r5.add_item("the_egg", "You look at the egg and are filled with great joy. You feel complete. It is done.")
         # add grabs
         r1.add_grabs("key")
         r2.add_grabs("fire")
@@ -178,7 +195,11 @@ class Game(Frame):
     def handle_go(self, destination):
         status = Game.STATUS_BAD_EXIT
         global voiceline
-        if destination in self.current_room.exits:
+        if (destination == "egg" and destination in self.inventory):
+            destination = "secretTunnel"
+            self.current_room = self.current_room.exits[destination]
+            status = Game.STATUS_ROOM_CHANGE
+        elif (destination in self.current_room.exits):
             if self.current_room.exits[destination].locked == True:
                 status = Game.STATUS_LOCKED
             else:
@@ -192,7 +213,7 @@ class Game(Frame):
         status = Game.STATUS_BAD_KEY
         if destination in self.current_room.exits:
             for playerkey in self.inventory:
-                if playerkey in self.inventory and playerkey == destination.key:
+                if playerkey in self.inventory and playerkey == self.current_room.exits[destination].key:
                     self.current_room.exits[destination].unlock()
                     status = Game.STATUS_UNLOCKED
 
@@ -200,12 +221,24 @@ class Game(Frame):
 
     def handle_look(self, item):
         status = Game.STATUS_BAD_ITEM
-
         if item in self.current_room.items:
-            status = self.current_room.items[item]
+            if item == "small_statue":
+                    status = Game.STATUS_LET_GUESS
+            else:
+                status = self.current_room.items[item]
 
         self.set_status(status)
+    
+    def handle_solve(self, guess):
+        guess = guess.upper()
+        code = "ERWY"
+        status = Game.STATUS_BAD_GUESS
+        if guess == code:
+            self.inventory.append("egg")
+            status = Game.STATUS_EGG_GRAB
 
+        self.set_status(status)
+        
     def handle_take(self, grabbable):
         status = Game.STATUS_BAD_GRABBABLE
         if grabbable in self.current_room.grabs:
@@ -250,8 +283,20 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
-            case "unlock":
+
+            ### CUSTOM VERBS
+            case "unlock":  ## Implemented by Grant
                 self.handle_unlock(destination=noun)
+            case "solve":   ## Implemented by Gavin
+                self.handle_solve(guess=noun)
+            
+            ### ALTERNATIVES FOR MAIN VERBS     ## Implemented by Gavin
+            case "move":
+                self.handle_go(destination=noun)
+            case "see":
+                self.handle_look(item=noun)
+            case "get":
+                self.handle_take(grabbable=noun)
 
 
 # main
