@@ -1,13 +1,15 @@
-#Name: Grant
-#date: 3/29/2023
-#Desc: Room adventure reloaded
+# Name: Grant
+# date: 3/29/2023
+# Desc: Room adventure reloaded
 
 from tkinter import *
 from random import choice
 import CLines
 
+
 class Room:
     """ a room that has a name and filepath that points to a .gif image """
+
     def __init__(self, name: str, filepath: str) -> None:
         self.name = name
         self.filepath = filepath
@@ -15,6 +17,8 @@ class Room:
         self.items = {}
         self.grabs = []
         self.talkables = {}
+        self.locked = False
+        self.key = None
 
     def add_exit(self, label: str, room: 'Room'):
         self.exits[label] = room
@@ -27,6 +31,16 @@ class Room:
 
     def del_grabs(self, label: str):
         self.grabs.remove(label)
+
+    # make room locked
+    def lock(self):
+        self.locked = True
+
+    def required_key(self, key):
+        self.key = key
+
+    def unlock(self):
+        self.locked = False
 
     def __str__(self) -> str:
         result = f"You are in {self.name}\n"
@@ -45,12 +59,14 @@ class Room:
         result += "Corriell: " + voiceline
 
         return result
+
+
 class Game(Frame):
     global voiceline
     voiceline = ''
-    EXIT_ACTIONS = ["quit,""exit","bye","q"]
+    EXIT_ACTIONS = ["quit,""exit", "bye", "q"]
 
-    #statuses
+    # statuses
     STATUS_DEFAULT = "I don't understand. Try [verb] [noun]. Valid verbs are go, look, take"
     SATUS_DEAD = "You are dead."
     STATUS_BAD_EXIT = "Invalid exit."
@@ -58,6 +74,9 @@ class Game(Frame):
     STATUS_GRABBED = "Item Grabbed"
     STATUS_BAD_GRABBABLE = "I cant grab that"
     STATUS_BAD_ITEM = "I dont see that"
+    STATUS_UNLOCKED = "Room Unlocked"
+    STATUS_LOCKED = "Room Locked"
+    STATUS_BAD_KEY = "This key isnt unlocking the door"
 
     WIDTH = 800
     HEIGHT = 600
@@ -68,13 +87,13 @@ class Game(Frame):
         self.pack(fill=BOTH, expand=1)
 
     def setup_game(self):
-        #create rooms
+        # create rooms
         r1 = Room("Room 1", "room1.gif")
         r2 = Room("Room 2", "room2.gif")
         r3 = Room("Room 3", "room3.gif")
         r4 = Room("Room 4", "room4.gif")
 
-        #add exits
+        # add exits
         r1.add_exit("south", r3)
         r1.add_exit("east", r2)
 
@@ -88,9 +107,10 @@ class Game(Frame):
         r4.add_exit("west", r3)
         r4.add_exit("south", None)
 
-        #add items
+        # add items
         r1.add_item("chair", "Something about wicker and legs")
         r1.add_item("bigger_chair", "just legs chair")
+        r1.add_item("key", "A silly looking key")
 
         r2.add_item("fireplace", "fire")
         r2.add_item("more_chair", "chairy")
@@ -100,35 +120,39 @@ class Game(Frame):
         r3.add_item("chair", "Somebody really likes to sit")
 
         r4.add_item("croissant", "moldy")
-        #add grabs
+        # add grabs
         r1.add_grabs("key")
         r2.add_grabs("fire")
         r3.add_grabs("doug")
         r4.add_grabs("butter")
-        #set the current room to the starting room
 
+        # locking
+        r3.lock()
+        r3.required_key("key")
+        # set the current room to the starting room
         self.current_room = r1
+
     def setup_gui(self):
         self.player_input = Entry(self, bg="white", fg="black")
         self.player_input.bind("<Return>", self.process)
         self.player_input.pack(side=BOTTOM, fill=X)
         self.player_input.focus()
 
-
         # the image container and default image
-        img = None #represetns the actual image
-        self.image_container = Label(self, width=Game.WIDTH//2, height=Game.HEIGHT//2)
+        img = None  # represetns the actual image
+        self.image_container = Label(self, width=Game.WIDTH // 2, height=Game.HEIGHT // 2)
         self.image_container.image = img
-        self.pack(side=LEFT,fill=Y)
+        self.pack(side=LEFT, fill=Y)
         self.image_container.pack_propagate(False)
 
-        #container for the game text
-        text_container = Frame(self, width=Game.WIDTH//2)
-        self.text = Text(text_container, bg="lightgrey",fg="black")
-        self.text.pack(fill=Y,expand=1)
-        text_container.pack(side=RIGHT,fill=Y)
+        # container for the game text
+        text_container = Frame(self, width=Game.WIDTH // 2)
+        self.text = Text(text_container, bg="lightgrey", fg="black")
+        self.text.pack(fill=Y, expand=1)
+        text_container.pack(side=RIGHT, fill=Y)
+
     def set_room_image(self):
-        if self.current_room == None:
+        if self.current_room is None:
             img = PhotoImage(file="skull.gif")
         else:
             img = PhotoImage(file="")
@@ -140,7 +164,7 @@ class Game(Frame):
         self.text.config(state=NORMAL)
         self.text.delete(1.0, END)
 
-        if self.current_room == None:
+        if self.current_room is None:
             self.text.insert(END, self.STATUS_DEAD)
         else:
             content = f"{self.current_room}\n You are carrying: {self.inventory}\n\n{status}"
@@ -153,11 +177,24 @@ class Game(Frame):
 
     def handle_go(self, destination):
         status = Game.STATUS_BAD_EXIT
+        global voiceline
         if destination in self.current_room.exits:
-            self.current_room = self.current_room.exits[destination]
-            global voiceline
-            voiceline = choice(CLines.VLNewRoom)
-            status = Game.STATUS_ROOM_CHANGE
+            if self.current_room.exits[destination].locked == True:
+                status = Game.STATUS_LOCKED
+            else:
+                self.current_room = self.current_room.exits[destination]
+                voiceline = choice(CLines.VLNewRoom)
+                status = Game.STATUS_ROOM_CHANGE
+
+        self.set_status(status)
+
+    def handle_unlock(self, destination):
+        status = Game.STATUS_BAD_KEY
+        if destination in self.current_room.exits:
+            for playerkey in self.inventory:
+                if playerkey in self.inventory and playerkey == destination.key:
+                    self.current_room.exits[destination].unlock()
+                    status = Game.STATUS_UNLOCKED
 
         self.set_status(status)
 
@@ -190,7 +227,7 @@ class Game(Frame):
         if action in Game.EXIT_ACTIONS:
             exit()
 
-        if self.current_room == None:
+        if self.current_room is None:
             self.clear_entry()
             return
 
@@ -198,7 +235,7 @@ class Game(Frame):
 
         if len(words) != 2:
             global voiceline
-            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLlost)
+            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLLost)
             self.set_status(Game.STATUS_DEFAULT)
             return
 
@@ -213,11 +250,11 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "take":
                 self.handle_take(grabbable=noun)
+            case "unlock":
+                self.handle_unlock(destination=noun)
 
 
-
-
-#main
+# main
 
 window = Tk()
 window.title("Room Adventure")
