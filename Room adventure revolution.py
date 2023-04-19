@@ -15,6 +15,8 @@ class Room:
         self.items = {}
         self.grabs = []
         self.talkables = {}
+        self.locked = False
+        self.key = None
 
     def add_exit(self, label: str, room: 'Room'):
         self.exits[label] = room
@@ -28,6 +30,16 @@ class Room:
     def del_grabs(self, label: str):
         self.grabs.remove(label)
 
+    #make room locked
+    def lock(self):
+        self.locked = True
+    def required_key(self, key):
+        self.key = key
+
+    def unlock(self, key):
+        if key == self.key and key in game.inventory:
+            self.inventory.remove(key)
+            self.locked = False
     def __str__(self) -> str:
         result = f"You are in {self.name}\n"
 
@@ -105,8 +117,11 @@ class Game(Frame):
         r2.add_grabs("fire")
         r3.add_grabs("doug")
         r4.add_grabs("butter")
-        #set the current room to the starting room
 
+        #locking
+        r3.lock()
+        r3.required_key("")
+        #set the current room to the starting room
         self.current_room = r1
     def setup_gui(self):
         self.player_input = Entry(self, bg="white", fg="black")
@@ -154,6 +169,8 @@ class Game(Frame):
     def handle_go(self, destination):
         status = Game.STATUS_BAD_EXIT
         if destination in self.current_room.exits:
+            if self.current_room.exits[destination].locked == True:
+                self.set_status(status)
             self.current_room = self.current_room.exits[destination]
             global voiceline
             voiceline = choice(CLines.VLNewRoom)
@@ -198,7 +215,7 @@ class Game(Frame):
 
         if len(words) != 2:
             global voiceline
-            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLlost)
+            voiceline = choice(CLines.VLBadSyntax) or choice(CLines.VLLost)
             self.set_status(Game.STATUS_DEFAULT)
             return
 
