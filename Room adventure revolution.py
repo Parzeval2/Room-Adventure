@@ -10,9 +10,10 @@ import CLines
 class Room:
     """ a room that has a name and filepath that points to a .gif image """
 
-    def __init__(self, name: str, filepath: str) -> None:
+    def __init__(self, name: str, filepath: str, number: int) -> None:
         self.name = name
         self.filepath = filepath
+        self.number = number
         self.exits = {}
         self.items = {}
         self.grabs = []
@@ -92,6 +93,10 @@ class Game(Frame):
     STATUS_WOKEUP = "You slept a pleasant 2 hours, maybe you should consider sleeping AFTER you survive, whatever floats your boat."
     STATUS_CANT_EAT = "Pretty sure you can't eat that"
     STATUS_ATE = "Has a texture similar to sand. It would've been nice if I'd been able to rehydrate this..."
+    
+    STATUS_UNUSABLE_ITEM = "You hear Professor Oak's words echo in your mind, 'There's a time and place for everything, but not now.'"
+    STATUS_CLASSIFIED = "The documents speak of an egg, the egg only seems able to understand the letters 'E' 'R' 'W' and 'Y.'"
+    STATUS_FIRE_ESCAPE = "You burn the egg using the fire you managed to pick up with your bare hands and quickly realize... THE EGG WAS A LIE. You scramble to rush out of the egg as its shell is burned, creating a strong heat that forces you to close your eyes... and then you wake up... with an egg. PART 1 END"
 
     WIDTH = 800
     HEIGHT = 600
@@ -103,14 +108,14 @@ class Game(Frame):
 
     def setup_game(self):
         # create rooms
-        r1 = Room("Common Area", "room1.gif")
-        r2 = Room("Dining Hall", "room2.gif")
-        r3 = Room("Restricted Laboratory", "room3.gif")
-        r4 = Room("Sleeping Quarters", "room4.gif")
-        r5 = Room("Enlightenment?", "cosmicEgg.gif")
-        r6 = Room("Corridor", "room6.gif")
-        r7 = Room("Observation Deck", "room7.gif")
-        r8 = Room("Laboratory", "room8.gif")
+        r1 = Room("Common Area", "room1.gif", 1)
+        r2 = Room("Dining Hall", "room2.gif", 2)
+        r3 = Room("Restricted Laboratory", "room3.gif", 3)
+        r4 = Room("Sleeping Quarters", "room4.gif", 4)
+        r5 = Room("Enlightenment?", "cosmicEgg.gif", 5)
+        r6 = Room("Corridor", "room6.gif", 6)
+        r7 = Room("Observation Deck", "room7.gif", 7)
+        r8 = Room("Laboratory", "room8.gif", 8)
 
         # add exits
         r1.add_exit("west", r6)
@@ -194,10 +199,11 @@ class Game(Frame):
         r7.add_item("window", "Fun fact, this costed over 20 million dollars")
 
         r8.add_item("lab_equipment", "bunch of research equipment including a scale, not sure about the last one...")
-        r8.add_item("safe", "Fortunately unlocked. Contains classified documents and a red keycard")
+        r8.add_item("safe", "Fortunately unlocked. Contains classified documents and a red keycard (It is now possible to use the 'use' keyword)")
 
 
         # add grabs
+        r2.add_grabs("fire")
         r2.add_grabs("meat")
         r2.add_grabs("milk")
         r2.add_grabs("ice_cream")
@@ -230,6 +236,10 @@ class Game(Frame):
         self.image_container.image = img
         self.image_container.pack(side=LEFT, fill=Y)
         self.image_container.pack_propagate(False)
+        
+        #Create button to go to minimap
+        self.btn = Button(self, text = 'Minimap', command = self.minimap)
+        self.btn.pack(side=RIGHT, fill=Y, expand=1)
 
         # container for the game text
         text_container = Frame(self, width=Game.WIDTH // 2)
@@ -237,7 +247,11 @@ class Game(Frame):
         self.text.pack(fill=Y, expand=1)
         text_container.pack(side=RIGHT, fill=Y)
         
-
+    def minimap(self):
+        mini.pack(anchor=CENTER)
+        game.pack_forget()
+        mini.here()
+    
     def set_room_image(self):
         if self.current_room is None:
             img = PhotoImage(file="skull.gif")
@@ -336,6 +350,20 @@ class Game(Frame):
             self.current_room.del_grabs(grabbable)
             status = Game.STATUS_GRABBED
         self.set_status(status)
+        
+    def handle_use(self, item):
+        item = item.lower()
+        if item in self.inventory:
+            if item == "classified_documents":
+                status = Game.STATUS_CLASSIFIED
+            elif item == "fire":
+                status = Game.STATUS_FIRE_ESCAPE
+                self.inventory.clear()
+                self.inventory.append("egg")
+            else:
+                status = Game.STATUS_UNUSABLE_ITEM
+        self.set_status(status)
+                
 
     def play(self):
         self.setup_game()
@@ -383,6 +411,8 @@ class Game(Frame):
                 self.handle_eat(food=noun)
             case "sleep": # implemented by Max
                 self.handle_sleep(location=noun)
+            case "use":
+                self.handle_use(item=noun)
             
             
             ### ALTERNATIVES FOR MAIN VERBS     ## Implemented by Gavin
@@ -393,11 +423,60 @@ class Game(Frame):
             case "get":
                 self.handle_take(grabbable=noun)
 
+class Minimap(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.pack()
+        #will be used to find where to put the "I am here!" label
+        self.position = {1:"0 5", 2:"0 7", 3:"2 5", 4:"2 7", 6:"0 3", 7:"0 1", 8:"2 1"}
+        
+    def setup_gui(self):
+        #Sets all the rooms labels
+        l1 = Label(self, text="Common Area", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l2 = Label(self, text="Dining Hall", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l3 = Label(self, text="Restricted Labratory", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l4 = Label(self, text="Sleeping Quarters", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l6 = Label(self, text="Corridor", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l7 = Label(self, text="Observation Deck", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l8 = Label(self, text="Labratory", width=200//6, height=300//24, relief="solid", anchor=N,)
+        #Spaces labels
+        l9 = Label(self, height=1, width=1)
+        l10 = Label(self, height=1, width=1)
+        l11 = Label(self, height=1, width=1)
+        #Create button to go back to game
+        self.btn = Button(self, text = 'Go Back', command = self.back, height=300//12)
+        self.btn.grid(rowspan=3, column=0)
+        
+        #Positions all labels
+        l1.grid(row=0, column=5)
+        l2.grid(row=0,column=7)
+        l3.grid(row=2,column=5)
+        l4.grid(row=2,column=7)
+        l6.grid(row=0,column=3)
+        l7.grid(row=0,column=1)
+        l8.grid(row=2,column=1)
+        l9.grid(row=1, column=2)
+        l10.grid(row=1, column=4)
+        l11.grid(row=1, column=6)
+        
+    def here(self):
+        self.hereLabel = Label(self, text="You are here!", anchor=CENTER)
+        row, col = self.position[game.current_room.number].split()
+        self.hereLabel.grid(row=row, column=col)
+        
+    def back(self):
+        game.pack(anchor=CENTER)
+        mini.pack_forget()
+        self.hereLabel.destroy()
 
 # main
 
 window = Tk()
 window.title("Room Adventure")
 game = Game(window)
+mini = Minimap(window)
+game.pack(anchor=CENTER)
+mini.pack_forget()
 game.play()
+mini.setup_gui()
 window.mainloop()
