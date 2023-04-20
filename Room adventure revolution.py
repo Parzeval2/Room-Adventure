@@ -10,7 +10,7 @@ import CLines
 class Room:
     """ a room that has a name and filepath that points to a .gif image """
 
-    def __init__(self, name: str, filepath: str) -> None:
+    def __init__(self, name: str, filepath: str, number: int) -> None:
         self.name = name
         self.filepath = filepath
         self.exits = {}
@@ -19,6 +19,7 @@ class Room:
         self.talkables = {}
         self.locked = False
         self.key = None
+        self.number = number
 
     def add_exit(self, label: str, room: 'Room'):
         self.exits[label] = room
@@ -98,11 +99,11 @@ class Game(Frame):
 
     def setup_game(self):
         # create rooms
-        r1 = Room("Room 1", "room1.gif")
-        r2 = Room("Room 2", "room2.gif")
-        r3 = Room("Room 3", "room3.gif")
-        r4 = Room("Room 4", "room4.gif")
-        r5 = Room("Room 5", "cosmicEgg.gif")
+        r1 = Room("Room 1", "room1.gif", 1)
+        r2 = Room("Room 2", "room2.gif", 2)
+        r3 = Room("Room 3", "room3.gif", 3)
+        r4 = Room("Room 4", "room4.gif", 4)
+        r5 = Room("Room 5", "cosmicEgg.gif", 5)
 
         # add exits
         r1.add_exit("south", r3)
@@ -187,11 +188,20 @@ class Game(Frame):
         self.pack(side=LEFT, fill=Y)
         self.image_container.pack_propagate(False)
 
+        #Create button to go to minimap
+        self.btn = Button(self, text = 'Minimap', command = self.minimap)
+        self.btn.pack(side=RIGHT, fill=Y, expand=1)
+        
         # container for the game text
         text_container = Frame(self, width=Game.WIDTH // 2)
         self.text = Text(text_container, bg="lightgrey", fg="black")
         self.text.pack(fill=Y, expand=1)
         text_container.pack(side=RIGHT, fill=Y)
+        
+    def minimap(self):
+        mini.pack(anchor=CENTER)
+        game.pack_forget()
+        mini.here()
 
     def set_room_image(self):
         if self.current_room is None:
@@ -328,12 +338,62 @@ class Game(Frame):
                 self.handle_look(item=noun)
             case "get":
                 self.handle_take(grabbable=noun)
-
+                
+class Minimap(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.pack()
+        self.config(width=WIDTH,height=HEIGHT)
+        #will be used to find where to put the "I am here!" label
+        self.position = {1:"0 5", 2:"0 7", 3:"2 5", 4:"2 7", 6:"0 3", 7:"0 1", 8:"2 1"}
+        
+    def setup_gui(self):
+        #Sets all the rooms labels
+        l1 = Label(self, text="Common Area", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l2 = Label(self, text="Dining Hall", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l3 = Label(self, text="Restricted Labratory", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l4 = Label(self, text="Sleeping Quarters", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l6 = Label(self, text="Corridor", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l7 = Label(self, text="Observation Deck", width=200//6, height=300//24, relief="solid", anchor=N,)
+        l8 = Label(self, text="Labratory", width=200//6, height=300//24, relief="solid", anchor=N,)
+        #Spaces labels
+        l9 = Label(self, height=1, width=1)
+        l10 = Label(self, height=1, width=1)
+        l11 = Label(self, height=1, width=1)
+        #Create button to go back to game
+        self.btn = Button(self, text = 'Go Back', command = self.back, height=300//12)
+        self.btn.grid(rowspan=3, column=0)
+        
+        #Positions all labels
+        l1.grid(row=0, column=5)
+        l2.grid(row=0,column=7)
+        l3.grid(row=2,column=5)
+        l4.grid(row=2,column=7)
+        l6.grid(row=0,column=3)
+        l7.grid(row=0,column=1)
+        l8.grid(row=2,column=1)
+        l9.grid(row=1, column=2)
+        l10.grid(row=1, column=4)
+        l11.grid(row=1, column=6)
+        
+    def here(self):
+        self.hereLabel = Label(self, text="You are here!", anchor=CENTER)
+        row, col = self.position[game.current_room.number].split()
+        self.hereLabel.grid(row=row, column=col)
+        
+    def back(self):
+        game.pack(anchor=CENTER)
+        mini.pack_forget()
+        self.hereLabel.destroy()
 
 # main
 
 window = Tk()
 window.title("Room Adventure")
 game = Game(window)
+mini = Minimap(window)
+game.pack(anchor=CENTER)
+mini.pack_forget()
 game.play()
+mini.setup_gui()
 window.mainloop()
