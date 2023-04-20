@@ -175,7 +175,7 @@ class Game(Frame):
                              "Despite its diminutive size, the chair is surprisingly sturdy, made of a durable yet lightweight material that doesn't creak or wobble under your weight. "
                              "The chair's surface is smooth and shiny, and it's colored in a bright, cheerful hue that only adds to its whimsical charm. "
                              "While it's clearly not a practical seating option for most people, it's hard to resist the urge to sit on it and revel in its absurdity.")
-        r2.add_item("fridge", "full of freeze dried meat, milk, and ice cream")
+        r2.add_item("fridge", "full of freeze dried meat, milk, and ice cream. On the side of the fridge, you find a magnetic note that reads \033[1mERWY\033[1m")
         r2.add_item("rehydrator", "Broken, clearly fell victim to the curse of the McDonalds ice cream machine")
 
         r3.add_item("desk", "The desk is a stunning combination of sleek metals and advanced polymers. "
@@ -196,7 +196,7 @@ class Game(Frame):
 
         r6.add_item("poster", "A Star Trek poster, fitting.")
 
-        r7.add_item("window", "Fun fact, this costed over 20 million dollars")
+        r7.add_item("window", "Fun fact, this costs over 20 million dollars")
 
         r8.add_item("lab_equipment", "bunch of research equipment including a scale, not sure about the last one...")
         r8.add_item("safe", "Fortunately unlocked. Contains classified documents and a red keycard (It is now possible to use the 'use' keyword)")
