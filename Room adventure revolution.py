@@ -26,6 +26,9 @@ class Room:
     def add_item(self, label: str, desc: str):
         self.items[label] = desc
 
+    def remove_item(self, label: str):
+        del self.items[label]
+
     def add_grabs(self, label: str):
         self.grabs.append(label)
 
@@ -122,19 +125,41 @@ class Game(Frame):
         r5.add_exit("none", r5)
 
         # add items
-        r1.add_item("chair", "Something about wicker and legs")
-        r1.add_item("bigger_chair", "just legs chair")
-        r1.add_item("key", "A silly looking kEy")
+        r1.add_item("chair", ""
+                             "The chair's sleek black alloy legs and shimmering, translucent backrest pulse with a soft blue light, powered by an unknown energy source. "
+                             "The cushion is made of a high-tech, memory foam material that molds to your body as you sit, while the armrests are made of a flexible polymer that adjusts to your arms. "
+                             "The small control panel embedded in the armrest allows for adjustable height, angle, and lumbar support. "
+                             "This chair was clearly designed for long space voyages, combining futuristic style with ergonomic functionality.")
+        r1.add_item("large_chair", "The massive skull throne before you is a formidable sight to behold. "
+                                   "Crafted from dark, polished metal, it seems to radiate an aura of power and dominance. "
+                                   "Its legs are thick and sturdy, each one ending in sharp, pointed tips that look like they could easily pierce through any surface. "
+                                   "The backrest is tall and imposing, decorated with intricate, glowing circuitry that gives off a faint green light. "
+                                   "The armrests are wide and adorned with sharp, jagged edges, evoking the image of a throne fit for a space lord or conqueror. "
+                                   "As you take a closer look, you notice small details that speak to its craftsmanship, such as the precision sculpting of the metal and the flawless finish of the material. "
+                                   "This throne-like chair is not just a piece of furniture, but a symbol of power and authority that commands attention and respect.")
+        r1.add_item("key", "The key card in your hand is a futuristic marvel. "
+                           "Made of a lightweight metallic alloy, it's smooth to the touch and adorned with glowing symbols and glyphs along its edge.")
 
-        r2.add_item("fireplace", "fiRe")
-        r2.add_item("more_chair", "chairy")
+        r2.add_item("fireplace", "The fireplace on the space station is a rare sight, burning specialized fuel pellets that create blue flames that dance around a sleek, heat-resistant alloy surround. "
+                                 "The mantel is engraved with alien symbols, and above the fireplace, a holographic display simulates a cozy cabin setting. "
+                                 "It's a vital psychological boost for astronauts, providing a moment of relaxation and respite from space travel.")
+        r2.add_item("chair", "The chair before you is nothing short of comical. "
+                             "It's so small that it looks like it was made for a child's dollhouse rather than a human being. "
+                             "The seat is barely wide enough to accommodate your backside, and the backrest is so low that it doesn't even reach your shoulder blades. "
+                             "The legs are short and stubby, and the entire chair is barely a foot off the ground. "
+                             "Despite its diminutive size, the chair is surprisingly sturdy, made of a durable yet lightweight material that doesn't creak or wobble under your weight. "
+                             "The chair's surface is smooth and shiny, and it's colored in a bright, cheerful hue that only adds to its whimsical charm. "
+                             "While it's clearly not a practical seating option for most people, it's hard to resist the urge to sit on it and revel in its absurdity.")
 
-        r3.add_item("desk", "They only had wickers at the Wood store")
+        r3.add_item("desk", "The desk is a stunning combination of sleek metals and advanced polymers. "
+                            "Its surface is touch-sensitive and scratch-resistant, and the drawers and compartments are hidden within the design. "
+                            "The legs are angular, and a holographic display rises from the desk, providing virtual access to your computer or other devices.")
         r3.add_item("small_statue", "A small stone bust of Lady Gaga.")
         r3.add_item("dimsdale_dimadome", "owned by doug dimadome")
-        r3.add_item("fancy_chair", "Somebody really likes to sit on zebra fur")
+        r3.add_item("fancy_chair", "The chair is generously proportioned and upholstered in fine leather with intricate stitching and piping. "
+                                   "The legs are made of polished wood, and the arms are gracefully curved and adorned with delicate carvings.")
 
-        r4.add_item("croissant", "moldY")
+        r4.add_item("croissant", "Moldy")
 
         r5.add_item("the_egg", "You look at the egg and are filled with great joy. You feel complete. It is done.")
         # add grabs
@@ -201,10 +226,11 @@ class Game(Frame):
             status = Game.STATUS_ROOM_CHANGE
         elif (destination in self.current_room.exits):
             if self.current_room.exits[destination].locked == True:
+                voiceline = choice(CLines.VLLockedDoor)
                 status = Game.STATUS_LOCKED
             else:
                 self.current_room = self.current_room.exits[destination]
-                voiceline = choice(CLines.VLNewRoom)
+                voiceline = choice(CLines.VLNewRoom, CLines.VLGoRight)
                 status = Game.STATUS_ROOM_CHANGE
 
         self.set_status(status)
@@ -216,6 +242,9 @@ class Game(Frame):
                 if playerkey in self.inventory and playerkey == self.current_room.exits[destination].key:
                     self.current_room.exits[destination].unlock()
                     status = Game.STATUS_UNLOCKED
+                else:
+                    global voiceline
+                    voiceline = choice(CLines.VLWrongKey)
 
         self.set_status(status)
 
@@ -242,6 +271,8 @@ class Game(Frame):
     def handle_take(self, grabbable):
         status = Game.STATUS_BAD_GRABBABLE
         if grabbable in self.current_room.grabs:
+            if grabbable == "key":
+                self.current_room.remove_item("key")
             self.inventory.append(grabbable)
             self.current_room.del_grabs(grabbable)
             status = Game.STATUS_GRABBED
